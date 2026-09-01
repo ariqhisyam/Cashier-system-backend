@@ -15,11 +15,14 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @Roles(Role.ADMIN, Role.KARYAWAN)
   @Get()
   async findAll(@Query() query: PaginationQueryDto) {
     const { products, meta } = await this.productsService.findAll(query);
@@ -30,6 +33,7 @@ export class ProductsController {
     };
   }
 
+  @Roles(Role.ADMIN, Role.KARYAWAN)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const product = await this.productsService.findOne(id);
@@ -39,6 +43,7 @@ export class ProductsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Post()
   async create(@Body() createProductDto: CreateProductDto) {
     const product = await this.productsService.create(createProductDto);
@@ -48,6 +53,7 @@ export class ProductsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Put(':id')
   async update(
     @Param('id') id: string,
@@ -60,6 +66,7 @@ export class ProductsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Patch(':id')
   async patch(
     @Param('id') id: string,
@@ -72,6 +79,7 @@ export class ProductsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async remove(@Param('id') id: string) {

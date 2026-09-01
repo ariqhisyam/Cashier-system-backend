@@ -2,11 +2,14 @@ import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { SaveQrisDto, SetSettingDto } from './dto/save-setting.dto';
 import { SaveGeofenceDto } from './dto/geofence-setting.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('settings')
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
+  @Roles(Role.ADMIN)
   @Get()
   async getAll() {
     const settings = await this.settingsService.getAllSettings();
@@ -16,6 +19,7 @@ export class SettingsController {
     };
   }
 
+  @Roles(Role.ADMIN, Role.KARYAWAN)
   @Get('qris')
   async getQris() {
     const imageUrl = await this.settingsService.getQrisImageUrl();
@@ -27,6 +31,7 @@ export class SettingsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Post('qris')
   async saveQris(@Body() body: SaveQrisDto) {
     const result = await this.settingsService.setQrisImageUrl(body.imageUrl);
@@ -36,6 +41,7 @@ export class SettingsController {
     };
   }
 
+  @Roles(Role.ADMIN, Role.KARYAWAN)
   @Get('geofence')
   async getGeofence() {
     const geofence = await this.settingsService.getGeofenceSetting();
@@ -45,6 +51,7 @@ export class SettingsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Post('geofence')
   async saveGeofence(@Body() body: SaveGeofenceDto) {
     const result = await this.settingsService.setGeofenceSetting(body);
@@ -54,6 +61,7 @@ export class SettingsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Get(':key')
   async getByKey(@Param('key') key: string) {
     const value = await this.settingsService.getSetting(key);
@@ -63,6 +71,7 @@ export class SettingsController {
     };
   }
 
+  @Roles(Role.ADMIN)
   @Post()
   async setSetting(@Body() body: SetSettingDto) {
     const result = await this.settingsService.setSetting(body.key, body.value);

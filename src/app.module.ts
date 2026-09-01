@@ -8,6 +8,9 @@ import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
 import { SettingsModule } from './settings/settings.module';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
 import { envValidationSchema } from './config/env.validation';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
@@ -23,12 +26,15 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          ttl: config.get<number>('THROTTLE_TTL') || 60000,
-          limit: config.get<number>('THROTTLE_LIMIT') || 100,
-        },
-      ],
+      useFactory: (config: ConfigService) => {
+        const isDev = config.get<string>('NODE_ENV') !== 'production';
+        return [
+          {
+            ttl: config.get<number>('THROTTLE_TTL') || 60000,
+            limit: isDev ? 100000 : config.get<number>('THROTTLE_LIMIT') || 100,
+          },
+        ];
+      },
     }),
     PrismaModule,
     StorageModule,
@@ -36,11 +42,20 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     UsersModule,
     SettingsModule,
     HealthModule,
+    AuthModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
     {
       provide: APP_FILTER,

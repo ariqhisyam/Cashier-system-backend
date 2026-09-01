@@ -20,4 +20,6 @@ export const envValidationSchema = Joi.object({
   ALLOWED_ORIGINS: Joi.string().default('http://localhost:3000'),
   THROTTLE_TTL: Joi.number().default(60000), // 1 minute window
   THROTTLE_LIMIT: Joi.number().default(100), // 100 requests per minute
+  JWT_SECRET: Joi.string().default('matcha-kyoto-pos-super-secret-jwt-key-2026'),
+  JWT_EXPIRES_IN: Joi.string().default('30d'),
 });

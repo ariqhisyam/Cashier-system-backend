@@ -9,11 +9,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from './storage.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('storage')
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
+  @Roles(Role.ADMIN, Role.KARYAWAN)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { SaveQrisDto, SetSettingDto } from './dto/save-setting.dto';
+import { SaveGeofenceDto } from './dto/geofence-setting.dto';
 
 @Controller('settings')
 export class SettingsController {
@@ -31,6 +32,24 @@ export class SettingsController {
     const result = await this.settingsService.setQrisImageUrl(body.imageUrl);
     return {
       message: 'URL QRIS berhasil disimpan',
+      data: result,
+    };
+  }
+
+  @Get('geofence')
+  async getGeofence() {
+    const geofence = await this.settingsService.getGeofenceSetting();
+    return {
+      message: 'Berhasil mengambil konfigurasi geofencing',
+      data: geofence,
+    };
+  }
+
+  @Post('geofence')
+  async saveGeofence(@Body() body: SaveGeofenceDto) {
+    const result = await this.settingsService.setGeofenceSetting(body);
+    return {
+      message: 'Konfigurasi geofencing berhasil disimpan',
       data: result,
     };
   }

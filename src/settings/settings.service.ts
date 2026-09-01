@@ -48,4 +48,55 @@ export class SettingsService {
 
     return this.setSetting('qris_image_url', newImageUrl);
   }
+
+  /**
+   * Get outlet geofencing configuration
+   */
+  async getGeofenceSetting() {
+    const defaultGeofence = {
+      latitude: -0.02633,
+      longitude: 109.342503,
+      radiusMeters: 100,
+      isEnabled: true,
+      addressName: 'Outlet 4rq Cashier - Pontianak',
+    };
+
+    const raw = await this.getSetting('geofence_setting', '');
+    if (!raw) return defaultGeofence;
+
+    try {
+      const parsed = JSON.parse(raw);
+      return {
+        latitude: typeof parsed.latitude === 'number' ? parsed.latitude : defaultGeofence.latitude,
+        longitude: typeof parsed.longitude === 'number' ? parsed.longitude : defaultGeofence.longitude,
+        radiusMeters: typeof parsed.radiusMeters === 'number' ? parsed.radiusMeters : defaultGeofence.radiusMeters,
+        isEnabled: typeof parsed.isEnabled === 'boolean' ? parsed.isEnabled : defaultGeofence.isEnabled,
+        addressName: parsed.addressName || defaultGeofence.addressName,
+      };
+    } catch {
+      return defaultGeofence;
+    }
+  }
+
+  /**
+   * Save outlet geofencing configuration
+   */
+  async setGeofenceSetting(data: {
+    latitude: number;
+    longitude: number;
+    radiusMeters: number;
+    isEnabled: boolean;
+    addressName: string;
+  }) {
+    const jsonStr = JSON.stringify({
+      latitude: Number(data.latitude),
+      longitude: Number(data.longitude),
+      radiusMeters: Number(data.radiusMeters),
+      isEnabled: Boolean(data.isEnabled),
+      addressName: data.addressName.trim(),
+    });
+
+    await this.setSetting('geofence_setting', jsonStr);
+    return this.getGeofenceSetting();
+  }
 }

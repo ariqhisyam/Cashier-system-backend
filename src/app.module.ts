@@ -9,6 +9,9 @@ import { UsersModule } from './users/users.module';
 import { SettingsModule } from './settings/settings.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
+import { TransactionsModule } from './transactions/transactions.module';
+import { AttendanceModule } from './attendance/attendance.module';
+import { TelegramModule } from './telegram/telegram.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { envValidationSchema } from './config/env.validation';
@@ -43,6 +46,9 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     SettingsModule,
     HealthModule,
     AuthModule,
+    TransactionsModule,
+    AttendanceModule,
+    TelegramModule,
   ],
   providers: [
     {

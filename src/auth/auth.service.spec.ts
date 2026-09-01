@@ -99,7 +99,10 @@ describe('AuthService', () => {
           path: '/',
         }),
       );
-      expect(result).toEqual(user);
+      expect(result).toEqual({
+        ...user,
+        token: 'mock-jwt-token',
+      });
     });
   });
 

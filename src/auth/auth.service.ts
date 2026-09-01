@@ -14,6 +14,7 @@ export interface SafeUserProfile {
   id: string;
   name: string;
   role: string;
+  token?: string;
 }
 
 @Injectable()
@@ -72,35 +73,57 @@ export class AuthService {
     const payload = { sub: user.id };
     const token = this.jwtService.sign(payload);
 
-    const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
+    const cookieOptions = this.getCookieOptions();
 
     // Set JWT strictly in HttpOnly Cookie - inaccessible to JavaScript
     response.cookie('access_token', token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      path: '/',
+      ...cookieOptions,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (1 month) in milliseconds
     });
 
-    return user;
+    return {
+      ...user,
+      token,
+    };
   }
 
   /**
    * Clears the HttpOnly access_token cookie
    */
   async logout(response: Response): Promise<{ success: boolean }> {
-    const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
-
-    response.clearCookie('access_token', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      path: '/',
-    });
+    const cookieOptions = this.getCookieOptions();
+    response.clearCookie('access_token', cookieOptions);
 
     return { success: true };
+  }
+
+  /**
+   * Helper to determine secure & CSRF-resilient cookie options based on environment
+   */
+  private getCookieOptions() {
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+    const sameSiteConfig =
+      this.configService.get<string>('COOKIE_SAME_SITE') as
+        | 'lax'
+        | 'strict'
+        | 'none'
+        | undefined;
+    const sameSite: 'lax' | 'strict' | 'none' = sameSiteConfig || 'lax';
+
+    const secureConfig = this.configService.get<boolean>('COOKIE_SECURE');
+    const secure =
+      secureConfig !== undefined
+        ? secureConfig
+        : sameSite === 'none'
+          ? true
+          : isProduction;
+
+    return {
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: '/',
+    };
   }
 }

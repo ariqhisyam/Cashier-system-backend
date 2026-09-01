@@ -12,15 +12,17 @@ datasource db {
 }
 
 model Product {
-  id              String    @id @default(uuid())
+  id              String            @id @default(uuid())
   name            String
   price           Int
-  stock           Int       @default(0)
-  rawMaterialCost Int       @default(0)
-  imageUrl        String    @default("/matcha-latte.jpg")
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  stock           Int               @default(0)
+  rawMaterialCost Int               @default(0)
+  imageUrl        String            @default("/matcha-latte.jpg")
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  transactionItems TransactionItem[]
 
   @@index([name])
   @@index([isActive])
@@ -40,18 +42,85 @@ enum Role {
   KARYAWAN
 }
 
+enum PaymentMethod {
+  CASH
+  QRIS
+}
+
 model User {
-  id            String    @id @default(uuid())
+  id            String        @id @default(uuid())
   name          String
-  key           String    @unique
-  role          Role      @default(KARYAWAN)
-  monthlySalary Int?      @default(0)
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  key           String        @unique
+  role          Role          @default(KARYAWAN)
+  monthlySalary Int?          @default(0)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  transactions  Transaction[]
+  attendances   Attendance[]
 
   @@index([name])
   @@index([role])
   @@index([isActive])
   @@map("users")
+}
+
+model Attendance {
+  id             String    @id @default(uuid())
+  userId         String?
+  userName       String
+  clockIn        DateTime  @default(now())
+  clockOut       DateTime?
+  latitude       Float?
+  longitude      Float?
+  distanceMeters Int?      @default(0)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([clockIn])
+  @@map("attendances")
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  total         Int
+  cashierId     String?
+  cashierName   String            @default("Kasir Utama")
+  paymentMethod PaymentMethod     @default(CASH)
+  cashPaid      Int?
+  changeAmount  Int?
+  qrisProofUrl  String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  items         TransactionItem[]
+  cashier       User?             @relation(fields: [cashierId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([cashierId])
+  @@index([paymentMethod])
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id              String       @id @default(uuid())
+  transactionId   String
+  productId       String?
+  productName     String
+  price           Int
+  quantity        Int
+  subtotal        Int
+  rawMaterialCost Int          @default(0)
+
+  transaction     Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product         Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([transactionId])
+  @@index([productId])
+  @@map("transaction_items")
 }

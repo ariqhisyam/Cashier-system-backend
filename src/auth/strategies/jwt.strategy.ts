@@ -43,9 +43,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
       ignoreExpiration: false,
-      secretOrKey:
-        configService.get<string>('JWT_SECRET') ||
-        'matcha-kyoto-pos-super-secret-jwt-key-2026',
+      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
     });
   }
 

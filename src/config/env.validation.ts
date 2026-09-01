@@ -12,8 +12,11 @@ export const envValidationSchema = Joi.object({
   SUPABASE_URL: Joi.string().uri().required().messages({
     'any.required': 'SUPABASE_URL is required for Supabase client',
   }),
-  SUPABASE_KEY: Joi.string().allow('').optional().default(''),
   SUPABASE_STORAGE_BUCKET: Joi.string().default('Cashier-system-img'),
+  S3_ENDPOINT: Joi.string().uri().optional().default('https://llyeovbymplgfalfxbrd.supabase.co/storage/v1/s3'),
+  S3_REGION: Joi.string().optional().default('ap-northeast-2'),
+  S3_ACCESS_KEY_ID: Joi.string().optional().allow(''),
+  S3_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),
   ALLOWED_ORIGINS: Joi.string().default('http://localhost:3000'),
   THROTTLE_TTL: Joi.number().default(60000), // 1 minute window
   THROTTLE_LIMIT: Joi.number().default(100), // 100 requests per minute

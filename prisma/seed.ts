@@ -78,6 +78,61 @@ async function main() {
     console.log('Created default QRIS image setting');
   }
 
+  // Seed default Users (Admin & Karyawan)
+  console.log('Seeding initial users...');
+  const DEFAULT_USERS = [
+    {
+      name: 'Admin Matcha',
+      key: 'admin123',
+      role: 'ADMIN' as const,
+      monthlySalary: 5000000,
+      isActive: true,
+    },
+    {
+      name: 'Kasir Utama',
+      key: 'kyoto123',
+      role: 'KARYAWAN' as const,
+      monthlySalary: 2500000,
+      isActive: true,
+    },
+    {
+      name: 'Siti Rahma',
+      key: 'kyoto456',
+      role: 'KARYAWAN' as const,
+      monthlySalary: 2200000,
+      isActive: true,
+    },
+    {
+      name: 'Budi Santoso',
+      key: 'kyoto789',
+      role: 'KARYAWAN' as const,
+      monthlySalary: 2200000,
+      isActive: true,
+    },
+    {
+      name: 'Ahmad Fauzi',
+      key: 'kyoto321',
+      role: 'KARYAWAN' as const,
+      monthlySalary: 2000000,
+      isActive: true,
+    },
+  ];
+
+  for (const user of DEFAULT_USERS) {
+    const existing = await prisma.user.findUnique({
+      where: { key: user.key },
+    });
+
+    if (!existing) {
+      await prisma.user.create({
+        data: user,
+      });
+      console.log(`Created user: ${user.name} (${user.role}) with key: ${user.key}`);
+    } else {
+      console.log(`User already exists: ${user.name} (${user.key})`);
+    }
+  }
+
   console.log('Seeding finished successfully!');
 }
 

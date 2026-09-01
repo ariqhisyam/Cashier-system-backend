@@ -31,9 +31,9 @@ export class CreateProductDto {
   @Min(0, { message: 'HPP tidak boleh negatif' })
   rawMaterialCost?: number;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'Gambar produk wajib diupload ke Supabase Object Storage' })
   @IsString({ message: 'URL gambar harus berupa string yang valid' })
-  imageUrl?: string;
+  imageUrl: string;
 
   @IsOptional()
   @IsBoolean({ message: 'Status aktif harus berupa boolean' })

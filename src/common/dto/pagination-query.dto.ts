@@ -13,7 +13,7 @@ export class PaginationQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 50;
+  limit?: number = 3;
 
   @IsOptional()
   @IsString()
@@ -21,7 +21,7 @@ export class PaginationQueryDto {
 
   @IsOptional()
   @IsIn(['asc', 'desc'])
-  sortOrder?: 'asc' | 'desc' = 'asc';
+  sortOrder?: 'asc' | 'desc' = 'desc';
 
   @IsOptional()
   @IsString()

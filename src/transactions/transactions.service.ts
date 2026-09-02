@@ -4,7 +4,8 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { Prisma, PaymentMethod } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { PaymentMethod } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';

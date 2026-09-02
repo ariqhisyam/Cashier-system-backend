@@ -4,7 +4,8 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { Role } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';

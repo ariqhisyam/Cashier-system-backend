@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, IsEnum } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { Role } from '@prisma/client';
+import { Role } from '../../common/enums';
 
 export class LoginDto {
   @IsString({ message: 'Kunci akses harus berupa teks' })

@@ -16,7 +16,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { Role } from '../common/enums';
 
 @Controller('products')
 export class ProductsController {

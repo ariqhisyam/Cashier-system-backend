@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod } from '../../common/enums';
 
 export class TransactionQueryDto {
   @IsOptional()

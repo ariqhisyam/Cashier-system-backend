@@ -1,7 +1,7 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RolesGuard } from './roles.guard';
-import { Role } from '@prisma/client';
+import { Role } from '../../common/enums';
 
 describe('RolesGuard', () => {
   let guard: RolesGuard;

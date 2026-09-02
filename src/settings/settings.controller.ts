@@ -3,7 +3,7 @@ import { SettingsService } from './settings.service';
 import { SaveQrisDto, SetSettingDto } from './dto/save-setting.dto';
 import { SaveGeofenceDto } from './dto/geofence-setting.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { Role } from '../common/enums';
 
 @Controller('settings')
 export class SettingsController {

@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod } from '../common/enums';
 
 describe('TransactionsService', () => {
   let service: TransactionsService;

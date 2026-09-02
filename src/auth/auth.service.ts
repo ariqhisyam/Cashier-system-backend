@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { Role } from '@prisma/client';
+import { Role } from '../common/enums';
 
 export interface SafeUserProfile {
   id: string;

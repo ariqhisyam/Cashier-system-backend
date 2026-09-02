@@ -15,7 +15,7 @@ import { ClockOutDto } from './dto/clock-out.dto';
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Role } from '@prisma/client';
+import { Role } from '../common/enums';
 import type { SafeUserProfile } from '../auth/auth.service';
 
 @Controller('attendance')

@@ -1,7 +1,7 @@
 import { IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { Role } from '@prisma/client';
+import { Role } from '../../common/enums';
 
 export class UserQueryDto extends PaginationQueryDto {
   @IsOptional()

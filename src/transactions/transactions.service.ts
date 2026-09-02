@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionQueryDto } from './dto/transaction-query.dto';
+import { CloseShiftDto } from './dto/close-shift.dto';
 
 @Injectable()
 export class TransactionsService {
@@ -200,5 +201,54 @@ export class TransactionsService {
     }
 
     return transaction;
+  }
+
+  /**
+   * Submits a shift report, persists it to database, and dispatches notification to Telegram
+   */
+  async submitShiftReport(dto: CloseShiftDto, user?: { id?: string; name?: string }) {
+    const shiftReport = await this.prisma.shiftReport.create({
+      data: {
+        shiftName: dto.shiftName,
+        closedBy: user?.name || 'Kasir',
+        employeeId: user?.id || null,
+        totalGrossRevenue: dto.totalGrossRevenue,
+        totalCups: dto.totalCups,
+        totalTransactions: dto.totalTransactions,
+        cashRevenue: dto.cashRevenue,
+        qrisRevenue: dto.qrisRevenue,
+        cashCups: dto.cashCups,
+        qrisCups: dto.qrisCups,
+        totalHpp: dto.totalHpp,
+        dailySalaryCost: 0,
+        totalExpenses: 0,
+        netProfit: dto.netProfit,
+        notes: dto.notes || null,
+        closedAt: new Date(),
+      },
+    });
+
+    this.logger.log(
+      `Shift closed by ${shiftReport.closedBy}: ${shiftReport.totalCups} cups sold, Gross: Rp ${shiftReport.totalGrossRevenue}`,
+    );
+
+    // Non-blocking Telegram notification
+    this.telegramService.sendShiftCloseNotification(shiftReport).catch((err) => {
+      this.logger.error(
+        `Failed to send Telegram shift report: ${err?.message}`,
+      );
+    });
+
+    return shiftReport;
+  }
+
+  /**
+   * Fetch all shift reports ordered by newest
+   */
+  async getShiftReports() {
+    return this.prisma.shiftReport.findMany({
+      orderBy: { closedAt: 'desc' },
+      take: 100,
+    });
   }
 }

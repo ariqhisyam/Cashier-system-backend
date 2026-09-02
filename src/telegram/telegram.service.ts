@@ -30,7 +30,7 @@ export interface TelegramShiftReportPayload {
   qrisCups: number;
   totalHpp: number;
   netProfit: number;
-  notes?: string;
+  notes?: string | null;
   closedAt: Date | string | number;
 }
 

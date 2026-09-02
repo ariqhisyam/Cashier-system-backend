@@ -59,6 +59,7 @@ model User {
 
   transactions  Transaction[]
   attendances   Attendance[]
+  shiftReports  ShiftReport[]
 
   @@index([name])
   @@index([role])
@@ -123,4 +124,34 @@ model TransactionItem {
   @@index([transactionId])
   @@index([productId])
   @@map("transaction_items")
+}
+
+model ShiftReport {
+  id                String   @id @default(uuid())
+  shiftName         String
+  closedBy          String
+  employeeId        String?
+  totalGrossRevenue Int      @default(0)
+  totalCups         Int      @default(0)
+  totalTransactions Int      @default(0)
+  totalHpp          Int      @default(0)
+  dailySalaryCost   Int      @default(0)
+  totalExpenses     Int      @default(0)
+  netProfit         Int      @default(0)
+  cashRevenue       Int      @default(0)
+  qrisRevenue       Int      @default(0)
+  cashCups          Int      @default(0)
+  qrisCups          Int      @default(0)
+  cashCount         Int      @default(0)
+  qrisCount         Int      @default(0)
+  notes             String?
+  closedAt          DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  employee          User?    @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([closedAt])
+  @@index([employeeId])
+  @@map("shift_reports")
 }

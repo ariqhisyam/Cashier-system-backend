@@ -29,6 +29,8 @@ export interface TelegramShiftReportPayload {
   cashCups: number;
   qrisCups: number;
   totalHpp: number;
+  dailySalaryCost?: number;
+  totalExpenses?: number;
   netProfit: number;
   notes?: string | null;
   closedAt: Date | string | number;
@@ -200,7 +202,9 @@ export class TelegramService {
       ``,
       `━━━━━━━━━━━━━━━━━━━━`,
       `💰 <b>Omset Kotor:</b> ${this.formatRupiah(report.totalGrossRevenue)}`,
-      `📦 <b>Estimasi HPP:</b> ${this.formatRupiah(report.totalHpp)}`,
+      `📦 <b>Estimasi HPP:</b> -${this.formatRupiah(report.totalHpp)}`,
+      ...(report.dailySalaryCost && report.dailySalaryCost > 0 ? [`💼 <b>Beban Gaji Kasir:</b> -${this.formatRupiah(report.dailySalaryCost)}`] : []),
+      ...(report.totalExpenses && report.totalExpenses > 0 ? [`🧾 <b>Biaya Operasional:</b> -${this.formatRupiah(report.totalExpenses)}`] : []),
       `📈 <b>Estimasi Laba Bersih:</b> <b>${this.formatRupiah(report.netProfit)}</b>`,
       ``,
       ...(report.notes ? [`📝 <b>Catatan:</b> <i>"${report.notes}"</i>`] : []),

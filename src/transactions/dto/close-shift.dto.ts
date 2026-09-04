@@ -28,6 +28,14 @@ export class CloseShiftDto {
   @IsNumber()
   totalHpp: number;
 
+  @IsOptional()
+  @IsNumber()
+  dailySalaryCost?: number;
+
+  @IsOptional()
+  @IsNumber()
+  totalExpenses?: number;
+
   @IsNumber()
   netProfit: number;
 

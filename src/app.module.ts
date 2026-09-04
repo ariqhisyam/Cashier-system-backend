@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { ExpensesModule } from './expenses/expenses.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { envValidationSchema } from './config/env.validation';
@@ -49,6 +50,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     TransactionsModule,
     AttendanceModule,
     TelegramModule,
+    ExpensesModule,
   ],
   providers: [
     {

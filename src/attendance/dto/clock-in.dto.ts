@@ -13,6 +13,11 @@ export class ClockInDto {
   longitude?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  accuracy?: number;
+
+  @IsOptional()
   @IsString()
   notes?: string;
 }

@@ -35,11 +35,26 @@ export class CloseShiftDto {
   @IsOptional()
   @IsNumber()
   totalExpenses?: number;
+  @IsOptional()
+  @IsNumber()
+  cashCount?: number;
 
+  @IsOptional()
+  @IsNumber()
+  qrisCount?: number;
   @IsNumber()
   netProfit: number;
 
   @IsOptional()
   @IsString()
+  closedBy?: string;
+
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 }
+

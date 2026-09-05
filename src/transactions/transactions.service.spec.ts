@@ -189,4 +189,94 @@ describe('TransactionsService', () => {
       );
     });
   });
+
+  describe('deleteTransaction', () => {
+    it('should delete transaction and restore product stock', async () => {
+      mockTx.transaction.findUnique = jest.fn().mockResolvedValue({
+        id: 'tx-123',
+        items: [{ productId: 'prod-1', quantity: 2 }],
+      });
+      mockTx.product.update = jest.fn().mockResolvedValue({});
+      mockTx.transaction.delete = jest.fn().mockResolvedValue({});
+
+      const result = await service.deleteTransaction('tx-123');
+      expect(result.id).toBe('tx-123');
+      expect(mockTx.product.update).toHaveBeenCalledWith({
+        where: { id: 'prod-1' },
+        data: { stock: { increment: 2 } },
+      });
+      expect(mockTx.transaction.delete).toHaveBeenCalledWith({
+        where: { id: 'tx-123' },
+      });
+    });
+
+    it('should throw NotFoundException if transaction not found', async () => {
+      mockTx.transaction.findUnique = jest.fn().mockResolvedValue(null);
+      await expect(service.deleteTransaction('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('deleteShiftReport', () => {
+    it('should delete shift report by id', async () => {
+      mockPrisma.shiftReport = {
+        findUnique: jest.fn().mockResolvedValue({ id: 'shift-1', shiftName: 'Shift 1' }),
+        delete: jest.fn().mockResolvedValue({ id: 'shift-1' }),
+      };
+
+      const result = await service.deleteShiftReport('shift-1');
+      expect(result.id).toBe('shift-1');
+      expect(mockPrisma.shiftReport.delete).toHaveBeenCalledWith({
+        where: { id: 'shift-1' },
+      });
+    });
+
+    it('should throw NotFoundException if shift report not found', async () => {
+      mockPrisma.shiftReport = {
+        findUnique: jest.fn().mockResolvedValue(null),
+      };
+
+      await expect(service.deleteShiftReport('invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('submitShiftReport', () => {
+    it('should set totalExpenses to 0 for shift and calculate net profit without store expenses', async () => {
+      mockPrisma.user = {
+        findFirst: jest.fn().mockResolvedValue({ id: 'user-1', monthlySalary: 800000 }),
+      };
+      mockPrisma.shiftReport = {
+        create: jest.fn().mockImplementation((args) => Promise.resolve({ id: 'shift-new', ...args.data })),
+      };
+
+      const result = await service.submitShiftReport({
+        shiftName: 'Shift 1',
+        totalGrossRevenue: 300000,
+        totalCups: 10,
+        totalTransactions: 2,
+        cashRevenue: 200000,
+        qrisRevenue: 100000,
+        cashCups: 6,
+        qrisCups: 4,
+        totalHpp: 100000,
+        dailySalaryCost: 0, // Should auto-calculate 800000 / 30 = 26667
+        totalExpenses: 0,
+      }, { id: 'user-1', name: 'Ahmad Fauzi' });
+
+      expect(mockPrisma.shiftReport.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            dailySalaryCost: 26667,
+            totalExpenses: 0,
+            netProfit: 300000 - 100000 - 26667, // 173333
+          }),
+        }),
+      );
+      expect(result.totalExpenses).toBe(0);
+      expect(result.netProfit).toBe(173333);
+    });
+  });
 });

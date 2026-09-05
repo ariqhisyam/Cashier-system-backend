@@ -99,4 +99,43 @@ export class SettingsService {
     await this.setSetting('geofence_setting', jsonStr);
     return this.getGeofenceSetting();
   }
+
+  /**
+   * Get operational expenses from persistent settings
+   */
+  async getExpenses(): Promise<Array<{ id: string; description: string; amount: number; timestamp: number }>> {
+    const raw = await this.getSetting('operational_expenses', '[]');
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Add new operational expense
+   */
+  async addExpense(data: { description: string; amount: number; timestamp?: number }): Promise<Array<{ id: string; description: string; amount: number; timestamp: number }>> {
+    const list = await this.getExpenses();
+    const newExpense = {
+      id: crypto.randomUUID(),
+      description: data.description?.trim() || 'Pengeluaran Lainnya',
+      amount: Math.round(Number(data.amount) || 0),
+      timestamp: data.timestamp || Date.now(),
+    };
+    list.unshift(newExpense);
+    await this.setSetting('operational_expenses', JSON.stringify(list));
+    return list;
+  }
+
+  /**
+   * Delete operational expense by id
+   */
+  async deleteExpense(id: string): Promise<Array<{ id: string; description: string; amount: number; timestamp: number }>> {
+    const list = await this.getExpenses();
+    const updated = list.filter((e) => e.id !== id);
+    await this.setSetting('operational_expenses', JSON.stringify(updated));
+    return updated;
+  }
 }

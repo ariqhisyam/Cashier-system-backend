@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -67,6 +68,16 @@ export class TransactionsController {
     };
   }
 
+  @Roles(Role.ADMIN)
+  @Delete('shift-reports/:id')
+  async deleteShiftReport(@Param('id') id: string) {
+    const result = await this.transactionsService.deleteShiftReport(id);
+    return {
+      message: result.message,
+      data: result,
+    };
+  }
+
   @Roles(Role.ADMIN, Role.KARYAWAN)
   @Get()
   async findAll(@Query() query: TransactionQueryDto) {
@@ -85,6 +96,16 @@ export class TransactionsController {
     return {
       message: 'Detail transaksi berhasil diambil',
       data: transaction,
+    };
+  }
+
+  @Roles(Role.ADMIN)
+  @Delete(':id')
+  async deleteTransaction(@Param('id') id: string) {
+    const result = await this.transactionsService.deleteTransaction(id);
+    return {
+      message: result.message,
+      data: result,
     };
   }
 }

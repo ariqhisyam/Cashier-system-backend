@@ -54,7 +54,11 @@ export class TelegramService {
   }
 
   private formatRupiah(amount: number): string {
-    return 'Rp ' + Number(amount || 0).toLocaleString('id-ID');
+    const val = Number(amount || 0);
+    if (val < 0) {
+      return '-Rp ' + Math.abs(val).toLocaleString('id-ID');
+    }
+    return 'Rp ' + val.toLocaleString('id-ID');
   }
 
   /**

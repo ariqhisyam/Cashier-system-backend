@@ -14,6 +14,7 @@ export interface SafeUserProfile {
   id: string;
   name: string;
   role: string;
+  monthlySalary?: number;
   token?: string;
 }
 
@@ -41,6 +42,7 @@ export class AuthService {
         id: true,
         name: true,
         role: true,
+        monthlySalary: true,
         isActive: true,
       },
     });
@@ -63,6 +65,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       role: user.role,
+      monthlySalary: user.monthlySalary ?? 0,
     };
   }
 

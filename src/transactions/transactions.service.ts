@@ -208,11 +208,34 @@ export class TransactionsService {
    * Submits a shift report, persists it to database, and dispatches notification to Telegram
    */
   async submitShiftReport(dto: CloseShiftDto, user?: { id?: string; name?: string }) {
+    let dailySalaryCost = dto.dailySalaryCost ?? 0;
+    const empId = user?.id || dto.employeeId;
+    const empName = user?.name || dto.closedBy;
+
+    // If dailySalaryCost was not provided or 0, look up the employee's monthly salary from database
+    if (dailySalaryCost === 0 && (empId || empName)) {
+      const emp = await this.prisma.user.findFirst({
+        where: empId ? { id: empId } : { name: empName },
+        select: { id: true, monthlySalary: true },
+      });
+      if (emp?.monthlySalary && emp.monthlySalary > 0) {
+        dailySalaryCost = Math.round(emp.monthlySalary / 30);
+      }
+    }
+
+    // Individual shift reports do not bear store operational expenses (expenses are deducted at the store daily/period summary level)
+    const totalExpenses = 0;
+
+    const netProfit =
+      dto.totalGrossRevenue -
+      dto.totalHpp -
+      dailySalaryCost;
+
     const shiftReport = await this.prisma.shiftReport.create({
       data: {
         shiftName: dto.shiftName,
-        closedBy: user?.name || 'Kasir',
-        employeeId: user?.id || null,
+        closedBy: user?.name || dto.closedBy || 'Kasir',
+        employeeId: user?.id || dto.employeeId || null,
         totalGrossRevenue: dto.totalGrossRevenue,
         totalCups: dto.totalCups,
         totalTransactions: dto.totalTransactions,
@@ -221,9 +244,11 @@ export class TransactionsService {
         cashCups: dto.cashCups,
         qrisCups: dto.qrisCups,
         totalHpp: dto.totalHpp,
-        dailySalaryCost: dto.dailySalaryCost !== undefined ? Math.round(dto.dailySalaryCost) : 0,
-        totalExpenses: dto.totalExpenses !== undefined ? Math.round(dto.totalExpenses) : 0,
-        netProfit: dto.netProfit,
+        dailySalaryCost,
+        totalExpenses,
+        cashCount: dto.cashCount ?? 0,
+        qrisCount: dto.qrisCount ?? 0,
+        netProfit,
         notes: dto.notes || null,
         closedAt: new Date(),
       },
@@ -251,5 +276,64 @@ export class TransactionsService {
       orderBy: { closedAt: 'desc' },
       take: 100,
     });
+  }
+
+  /**
+   * Delete a specific transaction by ID and restore stock
+   */
+  async deleteTransaction(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.findUnique({
+        where: { id },
+        include: { items: true },
+      });
+
+      if (!transaction) {
+        throw new NotFoundException(`Transaksi dengan ID #${id} tidak ditemukan`);
+      }
+
+      // Restore stock for each item if productId exists
+      for (const item of transaction.items) {
+        if (item.productId) {
+          try {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: { increment: item.quantity },
+              },
+            });
+          } catch {
+            // ignore if product has been deleted
+          }
+        }
+      }
+
+      await tx.transaction.delete({
+        where: { id },
+      });
+
+      this.logger.log(`Transaction #${id} deleted and stock restored`);
+      return { id, message: 'Transaksi berhasil dihapus dan stok produk telah dikembalikan' };
+    });
+  }
+
+  /**
+   * Delete a specific shift report by ID
+   */
+  async deleteShiftReport(id: string) {
+    const shift = await this.prisma.shiftReport.findUnique({
+      where: { id },
+    });
+
+    if (!shift) {
+      throw new NotFoundException(`Laporan shift dengan ID #${id} tidak ditemukan`);
+    }
+
+    await this.prisma.shiftReport.delete({
+      where: { id },
+    });
+
+    this.logger.log(`Shift report #${id} (${shift.shiftName}) deleted`);
+    return { id, message: 'Laporan shift berhasil dihapus' };
   }
 }

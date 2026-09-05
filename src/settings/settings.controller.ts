@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { SaveQrisDto, SetSettingDto } from './dto/save-setting.dto';
 import { SaveGeofenceDto } from './dto/geofence-setting.dto';
@@ -16,6 +16,36 @@ export class SettingsController {
     return {
       message: 'Berhasil mengambil data pengaturan',
       data: settings,
+    };
+  }
+
+  @Roles(Role.ADMIN, Role.KARYAWAN)
+  @Get('expenses')
+  async getExpenses() {
+    const expenses = await this.settingsService.getExpenses();
+    return {
+      message: 'Berhasil mengambil daftar pengeluaran operasional',
+      data: expenses,
+    };
+  }
+
+  @Roles(Role.ADMIN)
+  @Post('expenses')
+  async addExpense(@Body() body: { description: string; amount: number; timestamp?: number }) {
+    const expenses = await this.settingsService.addExpense(body);
+    return {
+      message: 'Pengeluaran operasional berhasil disimpan',
+      data: expenses,
+    };
+  }
+
+  @Roles(Role.ADMIN)
+  @Delete('expenses/:id')
+  async deleteExpense(@Param('id') id: string) {
+    const expenses = await this.settingsService.deleteExpense(id);
+    return {
+      message: 'Pengeluaran operasional berhasil dihapus',
+      data: expenses,
     };
   }
 

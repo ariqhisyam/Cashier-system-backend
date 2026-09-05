@@ -56,6 +56,29 @@ export class AttendanceService {
   }
 
   /**
+   * Helper to get start and end of today in WIB (UTC+7)
+   */
+  private getWibTodayRange(): { start: Date; end: Date } {
+    const now = new Date();
+    const wibMs = now.getTime() + 7 * 60 * 60 * 1000;
+    const wibDate = new Date(wibMs);
+    const startWib = new Date(
+      Date.UTC(
+        wibDate.getUTCFullYear(),
+        wibDate.getUTCMonth(),
+        wibDate.getUTCDate(),
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
+    const startUtc = new Date(startWib.getTime() - 7 * 60 * 60 * 1000);
+    const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000 - 1);
+    return { start: startUtc, end: endUtc };
+  }
+
+  /**
    * Process employee clock-in with geofence validation against outlet coordinates
    */
   async clockIn(dto: ClockInDto, user: SafeUserProfile) {
@@ -94,21 +117,30 @@ export class AttendanceService {
         geofence.longitude,
       );
 
-      if (distanceMeters > geofence.radiusMeters) {
-        throw new BadRequestException(
-          `📍 Anda berada di luar area outlet (Jarak: ${distanceMeters}m dari toko). Batas radius presensi: ${geofence.radiusMeters}m.`,
-        );
+      // Add dynamic accuracy buffer (up to 50m) for indoor/cellular GPS drift
+      const accuracyBuffer = Math.min(Math.max(0, dto.accuracy || 0), 50);
+      const maxAllowedRadius = geofence.radiusMeters + accuracyBuffer;
+
+      if (distanceMeters > maxAllowedRadius) {
+        if (dto.notes && dto.notes.includes('[DARURAT]')) {
+          this.logger.warn(
+            `Clock-in darurat di luar radius oleh ${user.name}: ${distanceMeters}m (Catatan: ${dto.notes})`,
+          );
+        } else {
+          throw new BadRequestException(
+            `📍 Anda berada di luar area outlet (Jarak: ${distanceMeters}m dari toko). Batas radius presensi: ${geofence.radiusMeters}m.`,
+          );
+        }
       }
     }
 
-    // 3. Check if there is already an active clock-in today without clock-out
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    // 3. Check if there is already an active clock-in today without clock-out (in WIB day)
+    const { start: todayStartWib } = this.getWibTodayRange();
 
     const existingActive = await this.prisma.attendance.findFirst({
       where: {
         userId: user.id,
-        clockIn: { gte: todayStart },
+        clockIn: { gte: todayStartWib },
         clockOut: null,
       },
     });
@@ -185,13 +217,12 @@ export class AttendanceService {
   async getActive(user: SafeUserProfile) {
     if (!user || !user.id) return null;
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const { start: todayStartWib } = this.getWibTodayRange();
 
     return this.prisma.attendance.findFirst({
       where: {
         userId: user.id,
-        clockIn: { gte: todayStart },
+        clockIn: { gte: todayStartWib },
         clockOut: null,
       },
       orderBy: { clockIn: 'desc' },

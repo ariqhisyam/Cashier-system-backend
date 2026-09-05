@@ -40,6 +40,7 @@ describe('AuthService', () => {
         id: 'usr-123',
         name: 'Admin Matcha',
         role: 'ADMIN',
+        monthlySalary: 0,
       });
       // Ensure key is NOT returned in the result
       expect((result as any).key).toBeUndefined();

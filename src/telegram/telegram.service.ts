@@ -40,14 +40,22 @@ export interface TelegramShiftReportPayload {
 export class TelegramService {
   private readonly logger = new Logger(TelegramService.name);
   private readonly botToken: string | undefined;
-  private readonly chatId: string | undefined;
+  private readonly chatIds: string[] = [];
 
   constructor(private readonly configService: ConfigService) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
-    this.chatId = this.configService.get<string>('TELEGRAM_CHAT_ID');
+    const rawChatId = this.configService.get<string>('TELEGRAM_CHAT_ID') || '-5465977680';
+    if (rawChatId) {
+      this.chatIds = rawChatId
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
+    }
 
-    if (this.botToken && this.chatId) {
-      this.logger.log('Telegram Bot service initialized with active Chat ID');
+    if (this.botToken && this.chatIds.length > 0) {
+      this.logger.log(
+        `Telegram Bot service initialized with ${this.chatIds.length} target chat(s): ${this.chatIds.join(', ')}`,
+      );
     } else {
       this.logger.warn('Telegram Bot credentials missing in configuration');
     }
@@ -65,7 +73,7 @@ export class TelegramService {
    * Send real-time cashier transaction receipt notification to Telegram
    */
   async sendTransactionNotification(tx: TelegramTransactionPayload): Promise<boolean> {
-    if (!this.botToken || !this.chatId) {
+    if (!this.botToken || this.chatIds.length === 0) {
       return false;
     }
 
@@ -121,53 +129,57 @@ export class TelegramService {
     ].join('\n');
 
     try {
-      // If QRIS proof image exists, send as photo with caption
-      if (isQris && tx.qrisProofUrl) {
-        const photoRes = await fetch(
-          `https://api.telegram.org/bot${this.botToken}/sendPhoto`,
+      const sendPromises = this.chatIds.map(async (chatId) => {
+        // If QRIS proof image exists, try sending as photo first
+        if (isQris && tx.qrisProofUrl) {
+          try {
+            const photoRes = await fetch(
+              `https://api.telegram.org/bot${this.botToken}/sendPhoto`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  photo: tx.qrisProofUrl,
+                  caption: messageHtml,
+                  parse_mode: 'HTML',
+                }),
+              },
+            );
+
+            const photoData = await photoRes.json();
+            if (photoData.ok) {
+              return true;
+            }
+          } catch {
+            // fallback to text message
+          }
+        }
+
+        // Default text message
+        const textRes = await fetch(
+          `https://api.telegram.org/bot${this.botToken}/sendMessage`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chat_id: this.chatId,
-              photo: tx.qrisProofUrl,
-              caption: messageHtml,
+              chat_id: chatId,
+              text: messageHtml,
               parse_mode: 'HTML',
             }),
           },
         );
 
-        const photoData = await photoRes.json();
-        if (photoData.ok) {
-          this.logger.log(`Telegram photo receipt sent for transaction #${shortId}`);
-          return true;
-        } else {
-          this.logger.warn(`Failed to send Telegram photo (${photoData.description}), falling back to text message`);
-        }
-      }
+        const textData = await textRes.json();
+        return !!textData.ok;
+      });
 
-      // Default text message
-      const textRes = await fetch(
-        `https://api.telegram.org/bot${this.botToken}/sendMessage`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: this.chatId,
-            text: messageHtml,
-            parse_mode: 'HTML',
-          }),
-        },
-      );
-
-      const textData = await textRes.json();
-      if (textData.ok) {
-        this.logger.log(`Telegram text receipt sent for transaction #${shortId}`);
-        return true;
-      } else {
-        this.logger.error(`Telegram API error: ${textData.description}`);
-        return false;
+      const results = await Promise.all(sendPromises);
+      const anySuccess = results.some(Boolean);
+      if (anySuccess) {
+        this.logger.log(`Telegram receipt sent for transaction #${shortId} to ${results.filter(Boolean).length} chat(s)`);
       }
+      return anySuccess;
     } catch (err: any) {
       this.logger.error(`Error sending Telegram notification: ${err?.message}`);
       return false;
@@ -178,7 +190,7 @@ export class TelegramService {
    * Send shift closure report summary to Telegram
    */
   async sendShiftCloseNotification(report: TelegramShiftReportPayload): Promise<boolean> {
-    if (!this.botToken || !this.chatId) {
+    if (!this.botToken || this.chatIds.length === 0) {
       return false;
     }
 
@@ -217,21 +229,26 @@ export class TelegramService {
     ].join('\n');
 
     try {
-      const res = await fetch(
-        `https://api.telegram.org/bot${this.botToken}/sendMessage`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: this.chatId,
-            text: messageHtml,
-            parse_mode: 'HTML',
-          }),
-        },
-      );
+      const sendPromises = this.chatIds.map(async (chatId) => {
+        const res = await fetch(
+          `https://api.telegram.org/bot${this.botToken}/sendMessage`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: messageHtml,
+              parse_mode: 'HTML',
+            }),
+          },
+        );
 
-      const data = await res.json();
-      return !!data.ok;
+        const data = await res.json();
+        return !!data.ok;
+      });
+
+      const results = await Promise.all(sendPromises);
+      return results.some(Boolean);
     } catch (err: any) {
       this.logger.error(`Error sending Telegram shift report: ${err?.message}`);
       return false;

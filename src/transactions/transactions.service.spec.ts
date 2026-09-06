@@ -76,6 +76,14 @@ describe('TransactionsService', () => {
         { id: 'user-1', name: 'kuylaa' },
       );
 
+      expect(mockPrisma.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        {
+          maxWait: 10000,
+          timeout: 20000,
+        },
+      );
+
       expect(mockTx.product.update).toHaveBeenCalledWith({
         where: { id: 'prod-1' },
         data: { stock: { decrement: 2 } },
@@ -240,6 +248,13 @@ describe('TransactionsService', () => {
 
       const result = await service.deleteTransaction('tx-123');
       expect(result.id).toBe('tx-123');
+      expect(mockPrisma.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        {
+          maxWait: 10000,
+          timeout: 15000,
+        },
+      );
       expect(mockTx.product.update).toHaveBeenCalledWith({
         where: { id: 'prod-1' },
         data: { stock: { increment: 2 } },

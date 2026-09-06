@@ -126,6 +126,9 @@ export class TransactionsService {
       );
 
       return transaction;
+    }, {
+      maxWait: 10000,
+      timeout: 20000,
     });
 
     // Dispatch Telegram notification (await so serverless execution context does not terminate prematurely)
@@ -329,6 +332,9 @@ export class TransactionsService {
 
       this.logger.log(`Transaction #${id} deleted and stock restored`);
       return { id, message: 'Transaksi berhasil dihapus dan stok produk telah dikembalikan' };
+    }, {
+      maxWait: 10000,
+      timeout: 15000,
     });
   }
 

@@ -8,11 +8,17 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
 
 const server: Express = express();
+server.use(express.json({ limit: '10mb' }));
+server.use(express.urlencoded({ limit: '10mb', extended: true }));
 let isInitialized = false;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   const configService = app.get(ConfigService);
+
+  // Increase payload limit for QRIS proofs & high-res image uploads
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
   // 1. Security Headers & Cookies
   app.use(cookieParser());

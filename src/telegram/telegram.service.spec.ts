@@ -70,4 +70,32 @@ describe('TelegramService', () => {
       }),
     );
   });
+
+  it('should send photo notification via FormData when QRIS proof is a base64 Data URL', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({ ok: true, result: {} }),
+    } as any);
+
+    const tx = {
+      id: 'tx-99999999',
+      total: 17000,
+      cashierName: 'Ahmad Fauzi',
+      paymentMethod: 'QRIS',
+      qrisProofUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...',
+      createdAt: new Date(),
+      items: [
+        { productName: 'Pink Berry', price: 17000, quantity: 1, subtotal: 17000 },
+      ],
+    };
+
+    const result = await service.sendTransactionNotification(tx);
+    expect(result).toBe(true);
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/sendPhoto'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.any(FormData),
+      }),
+    );
+  });
 });

@@ -111,7 +111,7 @@ export class TransactionsService {
           paymentMethod: dto.paymentMethod,
           cashPaid,
           changeAmount,
-          qrisProofUrl: dto.qrisProofUrl || null,
+          qrisProofUrl: dto.qrisProofUrl?.startsWith('data:') ? null : (dto.qrisProofUrl || null),
           items: {
             create: itemsData,
           },
@@ -130,7 +130,10 @@ export class TransactionsService {
 
     // Dispatch Telegram notification (await so serverless execution context does not terminate prematurely)
     try {
-      await this.telegramService.sendTransactionNotification(result);
+      await this.telegramService.sendTransactionNotification({
+        ...result,
+        qrisProofUrl: dto.qrisProofUrl || result.qrisProofUrl,
+      });
     } catch (err: any) {
       this.logger.error(
         `Failed to send Telegram notification for tx #${result.id}: ${err?.message}`,

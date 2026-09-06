@@ -74,6 +74,25 @@ export class TelegramService {
     return 'Rp ' + val.toLocaleString('id-ID');
   }
 
+  private parseBase64Image(dataStr: string): { buffer: Buffer; mimeType: string; filename: string } | null {
+    try {
+      const matches = dataStr.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/s);
+      let mimeType = 'image/jpeg';
+      let base64Data = dataStr;
+      if (matches && matches.length === 3) {
+        mimeType = matches[1];
+        base64Data = matches[2];
+      } else if (dataStr.startsWith('http://') || dataStr.startsWith('https://')) {
+        return null;
+      }
+      const buffer = Buffer.from(base64Data, 'base64');
+      const ext = mimeType.split('/')[1]?.split('+')[0] || 'jpg';
+      return { buffer, mimeType, filename: `bukti-qris.${ext}` };
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * Send real-time cashier transaction receipt notification to Telegram
    */
@@ -138,26 +157,54 @@ export class TelegramService {
         // If QRIS proof image exists, try sending as photo first
         if (isQris && tx.qrisProofUrl) {
           try {
-            const photoRes = await fetch(
-              `https://api.telegram.org/bot${this.botToken}/sendPhoto`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  photo: tx.qrisProofUrl,
-                  caption: messageHtml,
-                  parse_mode: 'HTML',
-                }),
-              },
-            );
+            const caption =
+              messageHtml.length <= 1024
+                ? messageHtml
+                : messageHtml.slice(0, 1020) + '...';
+            const base64Info = this.parseBase64Image(tx.qrisProofUrl);
+
+            let photoRes: Response;
+            if (base64Info) {
+              const formData = new FormData();
+              formData.append('chat_id', chatId);
+              const blob = new Blob([new Uint8Array(base64Info.buffer)], { type: base64Info.mimeType });
+              formData.append('photo', blob, base64Info.filename);
+              formData.append('caption', caption);
+              formData.append('parse_mode', 'HTML');
+
+              photoRes = await fetch(
+                `https://api.telegram.org/bot${this.botToken}/sendPhoto`,
+                {
+                  method: 'POST',
+                  body: formData,
+                },
+              );
+            } else {
+              photoRes = await fetch(
+                `https://api.telegram.org/bot${this.botToken}/sendPhoto`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    photo: tx.qrisProofUrl,
+                    caption,
+                    parse_mode: 'HTML',
+                  }),
+                },
+              );
+            }
 
             const photoData = await photoRes.json();
             if (photoData.ok) {
               return true;
+            } else {
+              this.logger.warn(
+                `Telegram sendPhoto failed: ${photoData.description || JSON.stringify(photoData)}`,
+              );
             }
-          } catch {
-            // fallback to text message
+          } catch (photoErr: any) {
+            this.logger.warn(`Error sending Telegram photo: ${photoErr?.message}`);
           }
         }
 

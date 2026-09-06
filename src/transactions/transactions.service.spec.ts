@@ -8,6 +8,7 @@ describe('TransactionsService', () => {
   const mockTx: any = {
     product: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
     },
     transaction: {
@@ -177,6 +178,44 @@ describe('TransactionsService', () => {
         }),
       );
       expect(result.id).toBe('tx-456');
+    });
+
+    it('should fallback to productName if productId (like dummy ID "1") is not found by ID', async () => {
+      // First lookup by ID '1' returns null
+      mockTx.product.findUnique.mockResolvedValue(null);
+      // Fallback lookup by name finds the real product
+      mockTx.product.findFirst.mockResolvedValue({
+        id: 'real-uuid-pink-berry',
+        name: 'Pink Berry',
+        price: 17000,
+        stock: 50,
+        rawMaterialCost: 6419,
+        isActive: true,
+      });
+
+      mockTx.transaction.create.mockResolvedValue({
+        id: 'tx-fallback-789',
+        total: 17000,
+        items: [],
+      });
+
+      const result = await service.create(
+        {
+          items: [{ productId: '1', productName: 'Pink Berry', quantity: 1 }],
+          paymentMethod: PaymentMethod.CASH,
+          cashPaid: 20000,
+        },
+        { id: 'user-1', name: 'kuylaa' },
+      );
+
+      expect(mockTx.product.findFirst).toHaveBeenCalledWith({
+        where: { name: { equals: 'Pink Berry', mode: 'insensitive' } },
+      });
+      expect(mockTx.product.update).toHaveBeenCalledWith({
+        where: { id: 'real-uuid-pink-berry' },
+        data: { stock: { decrement: 1 } },
+      });
+      expect(result.id).toBe('tx-fallback-789');
     });
   });
 

@@ -41,13 +41,20 @@ export class TransactionsService {
       }> = [];
 
       for (const item of dto.items) {
-        const product = await tx.product.findUnique({
+        let product = await tx.product.findUnique({
           where: { id: item.productId },
         });
 
+        // Fail-safe fallback: If product not found by ID (e.g. client sent mock ID "1" or stale cached ID), try matching by product name
+        if (!product && item.productName) {
+          product = await tx.product.findFirst({
+            where: { name: { equals: item.productName, mode: 'insensitive' } },
+          });
+        }
+
         if (!product || !product.isActive) {
           throw new BadRequestException(
-            `Produk "${product?.name || item.productId}" tidak ditemukan atau sedang dinonaktifkan.`,
+            `Produk "${product?.name || item.productName || item.productId}" tidak ditemukan atau sedang dinonaktifkan.`,
           );
         }
 
@@ -57,9 +64,9 @@ export class TransactionsService {
           );
         }
 
-        // Atomically decrement stock
+        // Atomically decrement stock using resolved product.id
         await tx.product.update({
-          where: { id: item.productId },
+          where: { id: product.id },
           data: {
             stock: {
               decrement: item.quantity,

@@ -16,6 +16,10 @@ export class CreateTransactionItemDto {
   @IsNotEmpty()
   productId: string;
 
+  @IsOptional()
+  @IsString()
+  productName?: string;
+
   @IsNumber()
   @Min(1)
   quantity: number;

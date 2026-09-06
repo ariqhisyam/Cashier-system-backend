@@ -293,7 +293,7 @@ export class TransactionsService {
   }
 
   /**
-   * Delete a specific transaction by ID and restore stock
+   * Delete a specific transaction by ID and restore stock (idempotent)
    */
   async deleteTransaction(id: string) {
     return this.prisma.$transaction(async (tx) => {
@@ -303,7 +303,8 @@ export class TransactionsService {
       });
 
       if (!transaction) {
-        throw new NotFoundException(`Transaksi dengan ID #${id} tidak ditemukan`);
+        this.logger.warn(`Transaction #${id} not found in DB during deletion (already deleted)`);
+        return { id, message: 'Transaksi sudah tidak ada atau telah dihapus' };
       }
 
       // Restore stock for each item if productId exists
@@ -332,7 +333,7 @@ export class TransactionsService {
   }
 
   /**
-   * Delete a specific shift report by ID
+   * Delete a specific shift report by ID (idempotent)
    */
   async deleteShiftReport(id: string) {
     const shift = await this.prisma.shiftReport.findUnique({
@@ -340,7 +341,8 @@ export class TransactionsService {
     });
 
     if (!shift) {
-      throw new NotFoundException(`Laporan shift dengan ID #${id} tidak ditemukan`);
+      this.logger.warn(`Shift report #${id} not found in DB during deletion (already deleted)`);
+      return { id, message: 'Laporan shift sudah tidak ada atau telah dihapus' };
     }
 
     await this.prisma.shiftReport.delete({

@@ -249,11 +249,11 @@ describe('TransactionsService', () => {
       });
     });
 
-    it('should throw NotFoundException if transaction not found', async () => {
+    it('should return safe message if transaction already deleted (idempotent)', async () => {
       mockTx.transaction.findUnique = jest.fn().mockResolvedValue(null);
-      await expect(service.deleteTransaction('invalid-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      const result = await service.deleteTransaction('invalid-id');
+      expect(result.id).toBe('invalid-id');
+      expect(result.message).toContain('sudah tidak ada');
     });
   });
 
@@ -271,14 +271,14 @@ describe('TransactionsService', () => {
       });
     });
 
-    it('should throw NotFoundException if shift report not found', async () => {
+    it('should return safe message if shift report already deleted (idempotent)', async () => {
       mockPrisma.shiftReport = {
         findUnique: jest.fn().mockResolvedValue(null),
       };
 
-      await expect(service.deleteShiftReport('invalid-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      const result = await service.deleteShiftReport('invalid-id');
+      expect(result.id).toBe('invalid-id');
+      expect(result.message).toContain('sudah tidak ada');
     });
   });
 

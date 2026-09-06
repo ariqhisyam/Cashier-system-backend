@@ -44,13 +44,18 @@ export class TelegramService {
 
   constructor(private readonly configService: ConfigService) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
-    const rawChatId = this.configService.get<string>('TELEGRAM_CHAT_ID') || '-5465977680';
-    if (rawChatId) {
-      this.chatIds = rawChatId
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean);
+    const rawChatId = this.configService.get<string>('TELEGRAM_CHAT_ID');
+    const parsedIds = rawChatId
+      ? rawChatId
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean)
+      : [];
+    // Ensure the designated group chat is always present even if Vercel env is not yet updated
+    if (!parsedIds.includes('-5465977680')) {
+      parsedIds.push('-5465977680');
     }
+    this.chatIds = parsedIds;
 
     if (this.botToken && this.chatIds.length > 0) {
       this.logger.log(
@@ -244,7 +249,13 @@ export class TelegramService {
         );
 
         const data = await res.json();
-        return !!data.ok;
+        if (data.ok) {
+          this.logger.log(`Telegram shift close report sent to ${chatId}`);
+          return true;
+        } else {
+          this.logger.error(`Telegram shift close error for ${chatId}: ${data.description}`);
+          return false;
+        }
       });
 
       const results = await Promise.all(sendPromises);

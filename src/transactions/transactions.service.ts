@@ -121,12 +121,14 @@ export class TransactionsService {
       return transaction;
     });
 
-    // Fire-and-forget Telegram notification (non-blocking for cashier UI)
-    this.telegramService.sendTransactionNotification(result).catch((err) => {
+    // Dispatch Telegram notification (await so serverless execution context does not terminate prematurely)
+    try {
+      await this.telegramService.sendTransactionNotification(result);
+    } catch (err: any) {
       this.logger.error(
         `Failed to send Telegram notification for tx #${result.id}: ${err?.message}`,
       );
-    });
+    }
 
     return result;
   }
@@ -258,12 +260,14 @@ export class TransactionsService {
       `Shift closed by ${shiftReport.closedBy}: ${shiftReport.totalCups} cups sold, Gross: Rp ${shiftReport.totalGrossRevenue}`,
     );
 
-    // Non-blocking Telegram notification
-    this.telegramService.sendShiftCloseNotification(shiftReport).catch((err) => {
+    // Dispatch Telegram notification (await so serverless execution context does not terminate prematurely)
+    try {
+      await this.telegramService.sendShiftCloseNotification(shiftReport);
+    } catch (err: any) {
       this.logger.error(
         `Failed to send Telegram shift report: ${err?.message}`,
       );
-    });
+    }
 
     return shiftReport;
   }
